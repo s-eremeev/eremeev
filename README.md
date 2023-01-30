@@ -1,4 +1,6 @@
-# S. Eremeev
+# Еремеев Сергей Иванович
+
+![](https://drive.google.com/uc?export=view&id=1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL)
 ### project_final _2.0.ipynb - отчёт о выполнении дипломного проекта по профессии "Аналитик данных от нуля до middle", Нетология;
 ### bd_project_work.ipynb - отчёт о выполнении итогового проекта по курсу BigData, Нетология;
 ### apartment_evaluation.ipynb - практический кейс: прогноз стоимости квартиры, линейная регрессия;
