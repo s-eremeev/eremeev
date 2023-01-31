@@ -13,13 +13,13 @@ se271071@gmail.com
 
 ### С 2002 по 2022 год занимался аналитической работой в Пограничной службе ФСБ России, деятельность была связана с обработкой больших объёмов информации, поиском закономерностей, сравнительным анализом и выработкой рекомендаций по выбору объектов воздействия. Имею опыт правоприменительной деятельности и организационно-плановой работы. Считаю, что главный инструмент аналитика - мысленный эксперимент, основанный на данных и позволяющий формировать гимпотезы.
 ### Но одного мысленного эксперимента для полноценной работы с данными недостаточно, и в 2022-2023 г.г. прощёл обучение по профессии Аналитик данных с нуля до middle в [Нетологии](https://netology.ru/).
-### Примеры моих работ, выполненных в период обучения:
+### Некоторые примеры моих работ, выполненных в период обучения:
 #### 1.   [Отчёт о выполнении дипломного проекта](https://github.com/s-eremeev/eremeev/blob/eremeev/project_final%20_2.0.ipynb), Нетология;
 #### 2.   [Отчёт о выполнении итогового проекта по курсу BigData](https://github.com/s-eremeev/eremeev/blob/eremeev/bd_project_work.ipynb), Нетология;
 #### 3.   [Проектная работа по курсу "SQL и получение данных"](https://github.com/s-eremeev/eremeev/tree/eremeev/sql_project), Нетология:
 * [SQL-скрипт](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.sql);
 * [документация](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.pdf);
-#### 4.  [пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California):   
+#### 4.  [Пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California):   
 * [основная работа](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project.ipynb);
 * [с использованием метода N ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
 * [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
