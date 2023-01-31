@@ -33,4 +33,4 @@ se271071@gmail.com
 ### Сертификаты [Stepik](https://stepik.org/catalog):
 #### 1.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-551-0db3075.pdf);
 #### 2.   [Программирование на Python](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-67-17b28de.pdf);
-#### 3.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-76-0303dca.pdf).
+#### 3.   [Основы статистики](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-76-0303dca.pdf).
