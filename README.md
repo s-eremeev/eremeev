@@ -19,7 +19,7 @@ se271071@gmail.com
 #### 3.   [Проектная работа по курсу "SQL и получение данных"](https://github.com/s-eremeev/eremeev/tree/eremeev/sql_project), Нетология:
 * [SQL-скрипт](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.sql);
 * [документация](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.pdf);
-#### 4.  [test_project_California](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California) - пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья:   
+#### 4.  [пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California):   
 * [основная работа](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project.ipynb);
 * [с использованием метода N ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
 * [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
