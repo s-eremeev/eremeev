@@ -12,7 +12,7 @@ se271071@gmail.com
 
 
 ### С 2002 по 2022 год занимался аналитической работой в органе испольнительной власти по безопасности, деятельность была связана с обработкой больших объёмов информации, поиском закономерностей, сравнительным анализом и выработкой рекомендаций по выбору объектов воздействия. Имею опыт правоприменительной деятельности и организационно-плановой работы. Считаю, что главный инструмент аналитика - мысленный эксперимент, основанный на данных и позволяющий формировать гимпотезы.
-### Но одного мысленного эксперимента для полноценной работы с данными недостаточно, и в 2022-2023 г.г. прощёл обучение по профессии Аналитик данных с нуля до middle в [Нетологии](https://netology.ru/).
+### Но одного мысленного эксперимента для полноценной работы с данными недостаточно, и в 2022-2023 г.г. прощёл обучение по профессии Аналитик данных с нуля до middle в [Нетологии](https://netology.ru/), закончил ряд полезных курсов на [Stepik](https://stepik.org/catalog).
 ### Некоторые примеры моих работ, выполненных в период обучения:
 #### 1.   [Отчёт о выполнении дипломного проекта](https://github.com/s-eremeev/eremeev/blob/eremeev/project_final%20_2.0.ipynb), Нетология;
 #### 2.   [Отчёт о выполнении итогового проекта по курсу "BigData"](https://github.com/s-eremeev/eremeev/blob/eremeev/bd_project_work.ipynb), Нетология;
@@ -30,3 +30,7 @@ se271071@gmail.com
 #### 4.   [A/B-тестирование: практическое руководство](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/abt.pdf);
 #### 5.   [DataVizArt: Основы визуализации данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/data_viz_art.pdf);
 #### 6.   [Метрики, гипотезы, точки роста](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/mgt.pdf).
+### Сертификаты [Stepik](https://stepik.org/catalog):
+#### 1.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-551-0db3075.pdf);
+#### 2.   [Программирование на Python](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-67-17b28de.pdf);
+#### 3.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-76-0303dca.pdf).
