@@ -21,7 +21,7 @@ se271071@gmail.com
 * [документация](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.pdf);
 #### 4.  [Пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California):   
 * [основная работа](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project.ipynb);
-* [с использованием метода N ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
+* [с использованием метода K ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
 * [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
 ### Сертификаты [Нетологии](https://netology.ru/):
 #### 1.   [Основы аналитики и аналитического мышления](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/start.pdf);
