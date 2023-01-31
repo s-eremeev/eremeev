@@ -24,12 +24,13 @@ se271071@gmail.com
 * [с использованием метода K ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
 * [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
 ### Сертификаты [Нетологии](https://netology.ru/):
-#### 1.   [Основы аналитики и аналитического мышления](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/start.pdf);
-#### 2.   [SQL и получение данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/sql.pdf);
-#### 3.   [BIG DATA с нуля](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/big_data.pdf);
-#### 4.   [A/B-тестирование: практическое руководство](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/abt.pdf);
-#### 5.   [DataVizArt: Основы визуализации данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/data_viz_art.pdf);
-#### 6.   [Метрики, гипотезы, точки роста](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/mgt.pdf).
+#### 1.   [Аналитик данных с нуля до middle](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/big_certificate.pdf);
+#### 2.   [Основы аналитики и аналитического мышления](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/start.pdf);
+#### 3.   [SQL и получение данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/sql.pdf);
+#### 4.   [BIG DATA с нуля](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/big_data.pdf);
+#### 5.   [A/B-тестирование: практическое руководство](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/abt.pdf);
+#### 6.   [DataVizArt: Основы визуализации данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/data_viz_art.pdf);
+#### 7.   [Метрики, гипотезы, точки роста](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/mgt.pdf).
 ### Сертификаты [Stepik](https://stepik.org/catalog):
 #### 1.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-551-0db3075.pdf);
 #### 2.   [Программирование на Python](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-67-17b28de.pdf);
