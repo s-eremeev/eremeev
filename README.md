@@ -4,6 +4,8 @@ sk27101971@yandex.ru
 se271071@gmail.com   
 +7 996 521 2710   
 
+https://drive.google.com/file/d/1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL/view?usp=sharing
+
 ![](https://drive.google.com/uc?export=1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL)
 
 ### Образование высшее:   
