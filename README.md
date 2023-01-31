@@ -4,7 +4,7 @@ sk27101971@yandex.ru
 se271071@gmail.com   
 [telegram](https://t.me/Kinick)   
 
-![](https://drive.google.com/uc?export=view&id=1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL)
+![](https://drive.google.com/uc?export=view&id=1xEx0gbJFbVwa8v-1agr8zqbn-9YanQhT)
 
 ### Образование высшее:   
 - инженер-электромеханик (1994 г.)   
