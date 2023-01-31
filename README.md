@@ -4,7 +4,7 @@ sk27101971@yandex.ru
 se271071@gmail.com   
 +7 996 521 2710   
 
-![](https://drive.google.com/uc?export=1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL)
+![](https://drive.google.com/uc?export=view&id=1iGDTdi_aKfRQ-9InJpTCnWJrBpPxdxyL)
 
 ### Образование высшее:   
 - инженер-электромеханик (1994 г.)   
