@@ -17,8 +17,8 @@ se271071@gmail.com
 #### 1.   [Отчёт о выполнении дипломного проекта](https://github.com/s-eremeev/eremeev/blob/eremeev/project_final%20_2.0.ipynb), Нетология;
 #### 2.   [Отчёт о выполнении итогового проекта по курсу BigData](https://github.com/s-eremeev/eremeev/blob/eremeev/bd_project_work.ipynb), Нетология;
 #### 3.   [Проектная работа по курсу "SQL и получение данных"](https://github.com/s-eremeev/eremeev/tree/eremeev/sql_project), Нетология
-* SQL-скрипт;
-* документация;
+* [SQL-скрипт](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.sql);
+* [документация]();
 #### 4.  test_project_California - пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья.   
 ### Сертификаты [Нетологии](https://netology.ru/):
 #### 1.   [Основы аналитики и аналитического мышления](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/start.pdf);
