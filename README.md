@@ -15,7 +15,7 @@ se271071@gmail.com
 ### Но одного мысленного эксперимента для полноценной работы с данными недостаточно, и в 2022-2023 г.г. прощёл обучение по профессии Аналитик данных с нуля до middle в [Нетологии](https://netology.ru/).
 ### Некоторые примеры моих работ, выполненных в период обучения:
 #### 1.   [Отчёт о выполнении дипломного проекта](https://github.com/s-eremeev/eremeev/blob/eremeev/project_final%20_2.0.ipynb), Нетология;
-#### 2.   [Отчёт о выполнении итогового проекта по курсу BigData](https://github.com/s-eremeev/eremeev/blob/eremeev/bd_project_work.ipynb), Нетология;
+#### 2.   [Отчёт о выполнении итогового проекта по курсу "BigData"](https://github.com/s-eremeev/eremeev/blob/eremeev/bd_project_work.ipynb), Нетология;
 #### 3.   [Проектная работа по курсу "SQL и получение данных"](https://github.com/s-eremeev/eremeev/tree/eremeev/sql_project), Нетология:
 * [SQL-скрипт](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.sql);
 * [документация](https://github.com/s-eremeev/eremeev/blob/eremeev/sql_project/eremeev.pdf);
