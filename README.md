@@ -16,7 +16,7 @@ se271071@gmail.com
 
 
 ### Сейчас я могу:
-
+![](https://cdn.browsercam.com/mindsharpener.ki.kartik-logo.png)
 * применять в работе знание теории вероятностей и математической статистики, линейной алгебры;
 * использовать рабочие станции под управлением Windows, Linux (Mint, Ubuntu);
 * уверенно пользоваться MS Office, LibreOffice, Google Docs, Яндекс.Документы;
