@@ -28,7 +28,7 @@ se271071@gmail.com
 * использовать информационно-справочные системы "Гарант", "Консультант Плюс";
 ##### Имею представление об Apache Spark, Knime.
 
-![](https://i.gifer.com/embedded/download/LL5L.gif)
+![](https://w7.pngwing.com/pngs/317/409/png-transparent-check-mark-plus-and-minus-signs-check-miscellaneous-angle-text-thumbnail.png)
 
 ### А ещё:
 * обладаю грамотной устной и письменной речью;   
