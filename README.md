@@ -49,7 +49,7 @@ se271071@gmail.com
 * [с использованием метода K ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
 * [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
 ### Дипломы:
-#### 1.   [Инженер-электоромеханик, Калининградское ВВМУ, 1994 год](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/diploma_0.png);
+#### 1.   [Инженер-электромеханик, Калининградское ВВМУ, 1994 год](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/diploma_0.png);
 #### 2.   [Государственное и мунициальное управление, Камчатский государственный технический унивреситет, 2022 год](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/diploma_1.png).
 ### Сертификаты [Нетологии](https://netology.ru/):
 #### 1.   [Аналитик данных с нуля до middle](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/big_certificate.pdf);
