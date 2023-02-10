@@ -66,3 +66,5 @@ se271071@gmail.com
 #### 1.   [Введение в базы данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-551-0db3075.pdf);
 #### 2.   [Программирование на Python](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-67-17b28de.pdf);
 #### 3.   [Основы статистики](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/stepik-certificate-76-0303dca.pdf).
+### Сертификат [Udemy](https://www.udemy.com/):
+#### 1.   [SQL для анализа данных](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/gleb_sql.png).
