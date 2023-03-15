@@ -50,7 +50,8 @@ se271071@gmail.com
 #### 4.  [Пример выполения тестового задания по восстановлению и анализу данных о стоимости жилья](https://github.com/s-eremeev/eremeev/tree/eremeev/test_project_California):   
 * [основная работа](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project.ipynb);
 * [с использованием метода K ближайших](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_KNN.ipynb);
-* [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb).
+* [с использованием логистической регрессии](https://github.com/s-eremeev/eremeev/blob/eremeev/test_project_California/test_project_lr.ipynb);
+#### 5.    [Пример построения дашборда (Tableau)](https://public.tableau.com/shared/6CXMCKFMT?:display_count=n&:origin=viz_share_link).
 ### Дипломы:
 #### 1.   [Инженер-электромеханик, Калининградское ВВМУ, 1994 год](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/diploma_0.png);
 #### 2.   [Государственное и мунициальное управление, Камчатский государственный технический унивреситет, 2022 год](https://github.com/s-eremeev/eremeev/blob/eremeev/certificates/diploma_1.png).
