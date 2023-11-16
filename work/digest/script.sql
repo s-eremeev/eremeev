@@ -1,233 +1,586 @@
-with
-	select_flag(flag_) as (values(0)), 							-- выбор расчётной даты для каждого региона: 0 - последняя дата, 1 - предпоследняя дата
-	border_days(i, days) as (values (0, 7), (1, 4), (2, 10)), 	-- "отступы": max дней от даты дайджеста до даты последнего отчёта (7), границы интервала для даты предпоследнего отчёта (от 4 до 10)
-	min_slot_length(mm) as (values(5)),							-- продолжительность "короткого" слота, мин
-	t_MAIN as
-	-- Отбор данных за 14 дней
-	(select c_ID, c_REG, c_DATE, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_DATE_REP, slots_type, c_SLOTS_C, c_SLOTS_B, c_STAVKA, slot_length,  visits_absence from
-		-- Отбор из основной таблицы
-	 	(select c_ID, c_REG, c_DATE, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, slots_type,
-		 		cast(slots_created as decimal(10, 0)) as c_SLOTS_C, cast(slots_booked as decimal(10, 0)) as c_SLOTS_B,
-		 		case
-					when left(date_report, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' then to_date(date_report, 'dd.mm.yyyy')
-					when left(date_report, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' then to_date(date_report, 'yyyy-mm-dd')
-					else to_date('1900-01-01', 'yyyy-mm-dd')
-				end as c_DATE_REP,
-				case
-					when replace(mp_stavka, ',', '.') ~ '^[0-9]+.[0-9]+$' then cast(replace(mp_stavka, ',', '.') as decimal(10, 3))
-					else 0
-				end as c_STAVKA,
-		 		case
-		 			when report_rows.slot_length ~ '^[0-9]+.[0-9]+$' then cast(report_rows.slot_length as decimal(10, 0))
-		 			else 0
-		 		end as slot_length, -- поля, которых у Морева нет
-		 		case
-		 			when report_rows.visits_absence ~ '^[0-9]+$' then cast(report_rows.visits_absence as int)
-		 			else 0
-		 		end as visits_absence
-		from flk.report_rows
-		 
-		 right join		-- фильтрует основную таблицу по отобранным ниже ID
-			 (select
-				case
-					when flag_ = 0 then v1
-					else v2
-				end as c_ID,
-				case
-					when flag_ = 0 then date_1
-					else date_2
-				end as c_DATE,
-				report_region_name as c_REG
-			from
-			(select  max(validation_id) as v2 , max (q2.report_date) as date_2, v1, date_1, q2.report_region_name
-				from flk.validations as q2
-				right join 
-					(select max(validation_id) as v1, max(report_date) as date_1, report_region_id
-					from flk.validations, border_days
-					where report_region_id is not null 
-					  and report_region_name is not null 
-					  and report_errors is null 
-					  and report_date >= current_date - (select days from border_days where i = 0)
-					group by report_region_id)  as q1 
-				on q1.report_region_id = q2.report_region_id
-				where q2.validation_id < v1 
-				 and q2.report_date <> date_1 
-				 and date_1 - (select days from border_days where i = 1)  >= q2.report_date  
-				 and q2.report_date>= date_1 - (select days from border_days where i = 2)
-				 and report_errors is null
-				group by v1, q2.report_region_name, date_1
-				order by report_region_name)as actual_data, select_flag, border_days) as t_ID_REG
-				on t_ID_REG.c_ID = flk.report_rows.validation_id
-		 
-		where sp_depart_type_name = 'Амбулаторный'
-		and mo_dept_name = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
-		and (left(date_report, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' or left(date_report, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$')
-		and slots_created ~ '^[0-9]+$' and slots_booked ~ '^[0-9]+$'
-		) as t_MAIN_tmp
-	where c_DATE_REP <= c_DATE and c_DATE_REP > c_DATE-14)
-
--- Собственно формирование выгрузки из ГЛАВНОЙ ТАБЛИЦЫ с приджойниванием столбцов
-select c_ID, c_DATE, c_REG_0, mo_oid_0, mo_short_name_0, sp_oid_0, sp_name_0, mp_dolgnost_0,
-		COALESCE (c_SLOTS_ALL, 0) as c_SLOTS_ALL,
-		COALESCE (c_SLOTS_BOOKED, 0) as c_SLOTS_BOOKED,
-		COALESCE (c_KONK_SLOTS_ALL, 0) as c_KONK_SLOTS_ALL,
-		COALESCE (c_KONK_SLOTS_BOOKED, 0) as c_KONK_SLOTS_BOOKED,
-		COALESCE (c_NEKONK_SLOTS_ALL, 0) as c_NEKONK_SLOTS_ALL,
-		COALESCE (c_NEKONK_SLOTS_BOOKED, 0) as c_NEKONK_SLOTS_BOOKED,
-		COALESCE (c_STAVKA_sum, 0) as c_STAVKA_sum,
-		COALESCE (c_STAVKA_DAYS_sum, 0) as c_STAVKA_DAYS_sum,
-		COALESCE (ABSENCE_COUNT, 0) as ABSENCE_COUNT,
-		COALESCE (SHORT_SLOTS_COUNT, 0) as SHORT_SLOTS_COUNT
-	from
-		(select c_ID, c_DATE, c_REG as c_REG_0, mo_oid as mo_oid_0, mo_short_name as mo_short_name_0, sp_oid as sp_oid_0, sp_name as sp_name_0, mp_dolgnost as mp_dolgnost_0,
-		sum(c_SLOTS_C) as c_SLOTS_ALL, sum(c_SLOTS_B) as c_SLOTS_BOOKED from t_MAIN
-		group by c_ID, c_REG, c_DATE, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_SLOTS
-
-	-- Приджойниваем конкурентные слоты всего и занятые
-	full join
-		(select c_REG as c_REG_1, mo_oid as mo_oid_1, mo_short_name as mo_short_name_1, sp_oid as sp_oid_1, sp_name as sp_name_1, mp_dolgnost as mp_dolgnost_1,
-		sum(c_SLOTS_C) as c_KONK_SLOTS_ALL, sum(c_SLOTS_B) as c_KONK_SLOTS_BOOKED from t_MAIN
-		where left(slots_type, 8) = 'Доступен'
-		group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_KONK_SLOTS
-	on t_SLOTS.c_REG_0 = t_KONK_SLOTS.c_REG_1
-	and t_SLOTS.mo_oid_0 = t_KONK_SLOTS.mo_oid_1
-	and t_SLOTS.mo_short_name_0 = t_KONK_SLOTS.mo_short_name_1
-	and t_SLOTS.sp_oid_0 = t_KONK_SLOTS.sp_oid_1
-	and t_SLOTS.sp_name_0 = t_KONK_SLOTS.sp_name_1
-	and t_SLOTS.mp_dolgnost_0 = t_KONK_SLOTS.mp_dolgnost_1
-
-	-- И также неконкурентные
-	full join
-		(select c_REG as c_REG_2, mo_oid as mo_oid_2, mo_short_name as mo_short_name_2, sp_oid as sp_oid_2, sp_name as sp_name_2, mp_dolgnost as mp_dolgnost_2,
-		sum(c_SLOTS_C) as c_NEKONK_SLOTS_ALL, sum(c_SLOTS_B) as c_NEKONK_SLOTS_BOOKED from t_MAIN
-		where left(slots_type, 10) = 'Недоступен' or left(slots_type, 11) = 'Не доступен'
-		group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_NEKONK_SLOTS
-	on t_SLOTS.c_REG_0 = t_NEKONK_SLOTS.c_REG_2
-	and t_SLOTS.mo_oid_0 = t_NEKONK_SLOTS.mo_oid_2
-	and t_SLOTS.mo_short_name_0 = t_NEKONK_SLOTS.mo_short_name_2
-	and t_SLOTS.sp_oid_0 = t_NEKONK_SLOTS.sp_oid_2
-	and t_SLOTS.sp_name_0 = t_NEKONK_SLOTS.sp_name_2
-	and t_SLOTS.mp_dolgnost_0 = t_NEKONK_SLOTS.mp_dolgnost_2
-
-	-- Наконец, отбираем уникальных врачей с уникальной ставкой, выводим по ним ставку и считаем ставкодни
-	full join
-		(select c_REG as c_REG_3, mo_oid as mo_oid_3, mo_short_name as mo_short_name_3, sp_oid as sp_oid_3, sp_name as sp_name_3, mp_dolgnost as mp_dolgnost_3,
-		 		sum(c_STAVKA) as c_STAVKA_sum, sum(c_STAVKA_DAYS) as c_STAVKA_DAYS_sum from
-			(select c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_STAVKA, c_STAVKA * c_DATE_REP_count as c_STAVKA_DAYS from
-				(select c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_STAVKA, count(c_DATE_REP) as c_DATE_REP_count from
-					(select distinct c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_DATE_REP, c_STAVKA from t_MAIN) as t_UNIC_1
-				group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_STAVKA) as t_UNIC_2
-			) as t_UNIC_3
-		group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_SD
-	on t_SLOTS.c_REG_0 = t_SD.c_REG_3
-	and t_SLOTS.mo_oid_0 = t_SD.mo_oid_3
-	and t_SLOTS.mo_short_name_0 = t_SD.mo_short_name_3
-	and t_SLOTS.sp_oid_0 = t_SD.sp_oid_3
-	and t_SLOTS.sp_name_0 = t_SD.sp_name_3
-	and t_SLOTS.mp_dolgnost_0 = t_SD.mp_dolgnost_3
-	
-	-- А равно и число неявок
-	full join
-		(select c_REG as c_REG_4, mo_oid as mo_oid_4, mo_short_name as mo_short_name_4, sp_oid as sp_oid_4, sp_name as sp_name_4, mp_dolgnost as mp_dolgnost_4,
-		sum(visits_absence) as ABSENCE_COUNT from t_MAIN
-		group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_ABSENCE_COUNT
-	on t_SLOTS.c_REG_0 = t_ABSENCE_COUNT.c_REG_4
-	and t_SLOTS.mo_oid_0 = t_ABSENCE_COUNT.mo_oid_4
-	and t_SLOTS.mo_short_name_0 = t_ABSENCE_COUNT.mo_short_name_4
-	and t_SLOTS.sp_oid_0 = t_ABSENCE_COUNT.sp_oid_4
-	and t_SLOTS.sp_name_0 = t_ABSENCE_COUNT.sp_name_4
-	and t_SLOTS.mp_dolgnost_0 = t_ABSENCE_COUNT.mp_dolgnost_4
-	
-		-- Также количество слотов с длиной меньше 5 мин
-	full join
-		(select c_REG as c_REG_5, mo_oid as mo_oid_5, mo_short_name as mo_short_name_5, sp_oid as sp_oid_5, sp_name as sp_name_5, mp_dolgnost as mp_dolgnost_5,
-		count(slot_length) as SHORT_SLOTS_COUNT from t_MAIN, min_slot_length
-		where slot_length < mm
-		group by c_REG, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost) as t_SHORT_SLOTS_COUNT
-	on t_SLOTS.c_REG_0 = t_SHORT_SLOTS_COUNT.c_REG_5
-	and t_SLOTS.mo_oid_0 = t_SHORT_SLOTS_COUNT.mo_oid_5
-	and t_SLOTS.mo_short_name_0 = t_SHORT_SLOTS_COUNT.mo_short_name_5
-	and t_SLOTS.sp_oid_0 = t_SHORT_SLOTS_COUNT.sp_oid_5
-	and t_SLOTS.sp_name_0 = t_SHORT_SLOTS_COUNT.sp_name_5
-	and t_SLOTS.mp_dolgnost_0 = t_SHORT_SLOTS_COUNT.mp_dolgnost_5
-				
-	-- для тестирования, потом убрать
-	--where mo_oid_0 = '1.2.643.5.1.13.13.12.2.28.2675'
-	--and sp_oid_0 = '1.2.643.5.1.13.13.12.2.28.2675.0.237138'
-	--and mp_dolgnost_0 = 'врач-терапевт участковый';
-	-- убрать до этого места;
-	
-	
-	
-	
--- ОСНОВНАЯ ТАБЛИЦА
-with
-	select_flag(flag_) as (values(0)), 							-- выбор расчётной даты для каждого региона: 0 - последняя дата, 1 - предпоследняя дата
-	border_days(i, days) as (values (0, 7), (1, 4), (2, 10)), 	-- "отступы": max дней от даты дайджеста до даты последнего отчёта (7), границы интервала для даты предпоследнего отчёта (от 4 до 10)
-	min_slot_length(mm) as (values(5)),							-- продолжительность "короткого" слота, мин
-	t_MAIN as
-	-- Отбор данных за 14 дней
-	(select c_ID, c_REG, c_DATE, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, c_DATE_REP, slots_type, c_SLOTS_C, c_SLOTS_B, c_STAVKA, slot_length,  visits_absence from
-		-- Отбор из основной таблицы
-	 	(select c_ID, c_REG, c_DATE, mo_oid, mo_short_name, sp_oid, sp_name, mp_dolgnost, mp_fio, slots_type,
-		 		cast(slots_created as decimal(10, 0)) as c_SLOTS_C, cast(slots_booked as decimal(10, 0)) as c_SLOTS_B,
-		 		case
-					when left(date_report, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' then to_date(date_report, 'dd.mm.yyyy')
-					when left(date_report, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' then to_date(date_report, 'yyyy-mm-dd')
-					else to_date('1900-01-01', 'yyyy-mm-dd')
-				end as c_DATE_REP,
-				case
-					when replace(mp_stavka, ',', '.') ~ '^[0-9]+.[0-9]+$' then cast(replace(mp_stavka, ',', '.') as decimal(10, 3))
-					else 0
-				end as c_STAVKA,
-		 		case
-		 			when report_rows.slot_length ~ '^[0-9]+.[0-9]+$' then cast(report_rows.slot_length as decimal(10, 0))
-		 			else 0
-		 		end as slot_length, -- поля, которых у Морева нет
-		 		case
-		 			when report_rows.visits_absence ~ '^[0-9]+$' then cast(report_rows.visits_absence as int)
-		 			else 0
-		 		end as visits_absence
-		from flk.report_rows
-		 
-		 right join		-- фильтрует основную таблицу по отобранным ниже ID
-			 (select
-				case
-					when flag_ = 0 then v1
-					else v2
-				end as c_ID,
-				case
-					when flag_ = 0 then date_1
-					else date_2
-				end as c_DATE,
-				report_region_name as c_REG
-			from
-			(select  max(validation_id) as v2 , max (q2.report_date) as date_2, v1, date_1, q2.report_region_name
-				from flk.validations as q2
-				right join 
-					(select max(validation_id) as v1, max(report_date) as date_1, report_region_id
-					from flk.validations, border_days
-					where report_region_id is not null 
-					  and report_region_name is not null 
-					  and report_errors is null 
-					  and report_date >= current_date - (select days from border_days where i = 0)
-					group by report_region_id)  as q1 
-				on q1.report_region_id = q2.report_region_id
-				where q2.validation_id < v1 
-				 and q2.report_date <> date_1 
-				 and date_1 - (select days from border_days where i = 1)  >= q2.report_date  
-				 and q2.report_date>= date_1 - (select days from border_days where i = 2)
-				 and report_errors is null
-				group by v1, q2.report_region_name, date_1
-				order by report_region_name)as actual_data, select_flag, border_days) as t_ID_REG
-				on t_ID_REG.c_ID = flk.report_rows.validation_id
-		 
-		where sp_depart_type_name = 'Амбулаторный'
-		and mo_dept_name = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
-		and (left(date_report, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' or left(date_report, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$')
-		and slots_created ~ '^[0-9]+$' and slots_booked ~ '^[0-9]+$'
-		) as t_MAIN_tmp
-	where c_DATE_REP <= c_DATE and c_DATE_REP > c_DATE-14)
-select *
-from t_MAIN
-where c_reg = 'Амурская область';
+WITH SELECT_FLAG(FLAG_) AS (VALUES(0)), -- выбор расчётной даты для каждого региона: 0 - последняя дата, 1 - предпоследняя дата
+BORDER_DAYS(I, DAYS) AS (VALUES (0, 7), (1, 4), (2, 10)), -- "отступы": max дней от даты дайджеста до даты последнего отчёта (7), границы интервала для даты предпоследнего отчёта (от 4 до 10)
+MIN_SLOT_LENGTH(MM) AS (VALUES(5)), -- продолжительность "короткого" слота, мин
+T_MAIN AS
+ -- Отбор данных за 14 дней
+(
+	SELECT
+		C_ID,
+		C_REG,
+		C_DATE,
+		MO_OID,
+		MO_SHORT_NAME,
+		SP_OID,
+		SP_NAME,
+		MP_DOLGNOST,
+		MP_FIO,
+		C_DATE_REP,
+		SLOTS_TYPE,
+		C_SLOTS_C,
+		C_SLOTS_B,
+		C_STAVKA,
+		SLOT_LENGTH,
+		VISITS_ABSENCE
+	FROM
+ -- Отбор из основной таблицы
+		(
+			SELECT
+				C_ID,
+				C_REG,
+				C_DATE,
+				MO_OID,
+				MO_SHORT_NAME,
+				SP_OID,
+				SP_NAME,
+				MP_DOLGNOST,
+				MP_FIO,
+				SLOTS_TYPE,
+				CAST(SLOTS_CREATED AS DECIMAL(10,
+				0)) AS C_SLOTS_C,
+				CAST(SLOTS_BOOKED AS DECIMAL(10,
+				0)) AS C_SLOTS_B,
+				CASE
+					WHEN LEFT(DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' THEN
+						TO_DATE(DATE_REPORT, 'dd.mm.yyyy')
+					WHEN LEFT(DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' THEN
+						TO_DATE(DATE_REPORT, 'yyyy-mm-dd')
+					ELSE
+						TO_DATE('1900-01-01', 'yyyy-mm-dd')
+				END AS C_DATE_REP,
+				CASE
+					WHEN REPLACE(MP_STAVKA, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN
+						CAST(REPLACE(MP_STAVKA, ',', '.') AS DECIMAL(10, 3))
+					ELSE
+						0
+				END AS C_STAVKA,
+				CASE
+					WHEN REPORT_ROWS.SLOT_LENGTH ~ '^[0-9]+.[0-9]+$' THEN
+						CAST(REPORT_ROWS.SLOT_LENGTH AS DECIMAL(10, 0))
+					ELSE
+						0
+				END AS SLOT_LENGTH, -- поля, которых у Морева нет
+				CASE
+					WHEN REPORT_ROWS.VISITS_ABSENCE ~ '^[0-9]+$' THEN
+						CAST(REPORT_ROWS.VISITS_ABSENCE AS INT)
+					ELSE
+						0
+				END AS VISITS_ABSENCE
+			FROM
+				FLK.REPORT_ROWS
+				RIGHT JOIN -- фильтрует основную таблицу по отобранным ниже ID
+				(
+					SELECT
+						CASE
+							WHEN FLAG_ = 0 THEN
+								V1
+							ELSE
+								V2
+						END AS C_ID,
+						CASE
+							WHEN FLAG_ = 0 THEN
+								DATE_1
+							ELSE
+								DATE_2
+						END AS C_DATE,
+						REPORT_REGION_NAME AS C_REG
+					FROM
+						(
+							SELECT
+								MAX(VALIDATION_ID) AS V2,
+								MAX (Q2.REPORT_DATE) AS DATE_2,
+								V1,
+								DATE_1,
+								Q2.REPORT_REGION_NAME
+							FROM
+								FLK.VALIDATIONS AS Q2
+								RIGHT JOIN (
+									SELECT
+										MAX(VALIDATION_ID) AS V1,
+										MAX(REPORT_DATE) AS DATE_1,
+										REPORT_REGION_ID
+									FROM
+										FLK.VALIDATIONS,
+										BORDER_DAYS
+									WHERE
+										REPORT_REGION_ID IS NOT NULL
+										AND REPORT_REGION_NAME IS NOT NULL
+										AND REPORT_ERRORS IS NULL
+										AND REPORT_DATE >= CURRENT_DATE - (
+											SELECT
+												DAYS
+											FROM
+												BORDER_DAYS
+											WHERE
+												I = 0
+										)
+									GROUP BY
+										REPORT_REGION_ID
+								) AS Q1
+								ON Q1.REPORT_REGION_ID = Q2.REPORT_REGION_ID
+							WHERE
+								Q2.VALIDATION_ID < V1
+								AND Q2.REPORT_DATE <> DATE_1
+								AND DATE_1 - (
+									SELECT
+										DAYS
+									FROM
+										BORDER_DAYS
+									WHERE
+										I = 1
+								) >= Q2.REPORT_DATE
+								AND Q2.REPORT_DATE>= DATE_1 - (
+									SELECT
+										DAYS
+									FROM
+										BORDER_DAYS
+									WHERE
+										I = 2
+								)
+								AND REPORT_ERRORS IS NULL
+							GROUP BY
+								V1,
+								Q2.REPORT_REGION_NAME,
+								DATE_1
+							ORDER BY
+								REPORT_REGION_NAME
+						)AS ACTUAL_DATA,
+						SELECT_FLAG,
+						BORDER_DAYS
+				) AS T_ID_REG
+				ON T_ID_REG.C_ID = FLK.REPORT_ROWS.VALIDATION_ID
+			WHERE
+				SP_DEPART_TYPE_NAME = 'Амбулаторный'
+				AND MO_DEPT_NAME = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
+				AND (LEFT(DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$'
+				OR LEFT(DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$')
+				AND SLOTS_CREATED ~ '^[0-9]+$'
+				AND SLOTS_BOOKED ~ '^[0-9]+$'
+		) AS T_MAIN_TMP
+	WHERE
+		C_DATE_REP <= C_DATE
+		AND C_DATE_REP > C_DATE-14
+)
+ -- Собственно формирование выгрузки из ГЛАВНОЙ ТАБЛИЦЫ с приджойниванием столбцов
+SELECT
+	C_ID,
+	C_DATE,
+	C_REG_0,
+	MO_OID_0,
+	MO_SHORT_NAME_0,
+	SP_OID_0,
+	SP_NAME_0,
+	MP_DOLGNOST_0,
+	COALESCE (C_SLOTS_ALL,
+	0) AS C_SLOTS_ALL,
+	COALESCE (C_SLOTS_BOOKED,
+	0) AS C_SLOTS_BOOKED,
+	COALESCE (C_KONK_SLOTS_ALL,
+	0) AS C_KONK_SLOTS_ALL,
+	COALESCE (C_KONK_SLOTS_BOOKED,
+	0) AS C_KONK_SLOTS_BOOKED,
+	COALESCE (C_NEKONK_SLOTS_ALL,
+	0) AS C_NEKONK_SLOTS_ALL,
+	COALESCE (C_NEKONK_SLOTS_BOOKED,
+	0) AS C_NEKONK_SLOTS_BOOKED,
+	COALESCE (C_STAVKA_SUM,
+	0) AS C_STAVKA_SUM,
+	COALESCE (C_STAVKA_DAYS_SUM,
+	0) AS C_STAVKA_DAYS_SUM,
+	COALESCE (ABSENCE_COUNT,
+	0) AS ABSENCE_COUNT,
+	COALESCE (SHORT_SLOTS_COUNT,
+	0) AS SHORT_SLOTS_COUNT
+FROM
+	(
+		SELECT
+			C_ID,
+			C_DATE,
+			C_REG AS C_REG_0,
+			MO_OID AS MO_OID_0,
+			MO_SHORT_NAME AS MO_SHORT_NAME_0,
+			SP_OID AS SP_OID_0,
+			SP_NAME AS SP_NAME_0,
+			MP_DOLGNOST AS MP_DOLGNOST_0,
+			SUM(C_SLOTS_C) AS C_SLOTS_ALL,
+			SUM(C_SLOTS_B) AS C_SLOTS_BOOKED
+		FROM
+			T_MAIN
+		GROUP BY
+			C_ID,
+			C_REG,
+			C_DATE,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_SLOTS
+ -- Приджойниваем конкурентные слоты всего и занятые
+	FULL JOIN (
+		SELECT
+			C_REG AS C_REG_1,
+			MO_OID AS MO_OID_1,
+			MO_SHORT_NAME AS MO_SHORT_NAME_1,
+			SP_OID AS SP_OID_1,
+			SP_NAME AS SP_NAME_1,
+			MP_DOLGNOST AS MP_DOLGNOST_1,
+			SUM(C_SLOTS_C) AS C_KONK_SLOTS_ALL,
+			SUM(C_SLOTS_B) AS C_KONK_SLOTS_BOOKED
+		FROM
+			T_MAIN
+		WHERE
+			LEFT(SLOTS_TYPE, 8) = 'Доступен'
+		GROUP BY
+			C_REG,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_KONK_SLOTS
+	ON T_SLOTS.C_REG_0 = T_KONK_SLOTS.C_REG_1
+	AND T_SLOTS.MO_OID_0 = T_KONK_SLOTS.MO_OID_1
+	AND T_SLOTS.MO_SHORT_NAME_0 = T_KONK_SLOTS.MO_SHORT_NAME_1
+	AND T_SLOTS.SP_OID_0 = T_KONK_SLOTS.SP_OID_1
+	AND T_SLOTS.SP_NAME_0 = T_KONK_SLOTS.SP_NAME_1
+	AND T_SLOTS.MP_DOLGNOST_0 = T_KONK_SLOTS.MP_DOLGNOST_1
+ -- И также неконкурентные
+	FULL JOIN (
+		SELECT
+			C_REG AS C_REG_2,
+			MO_OID AS MO_OID_2,
+			MO_SHORT_NAME AS MO_SHORT_NAME_2,
+			SP_OID AS SP_OID_2,
+			SP_NAME AS SP_NAME_2,
+			MP_DOLGNOST AS MP_DOLGNOST_2,
+			SUM(C_SLOTS_C) AS C_NEKONK_SLOTS_ALL,
+			SUM(C_SLOTS_B) AS C_NEKONK_SLOTS_BOOKED
+		FROM
+			T_MAIN
+		WHERE
+			LEFT(SLOTS_TYPE, 10) = 'Недоступен'
+			OR LEFT(SLOTS_TYPE, 11) = 'Не доступен'
+		GROUP BY
+			C_REG,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_NEKONK_SLOTS
+	ON T_SLOTS.C_REG_0 = T_NEKONK_SLOTS.C_REG_2
+	AND T_SLOTS.MO_OID_0 = T_NEKONK_SLOTS.MO_OID_2
+	AND T_SLOTS.MO_SHORT_NAME_0 = T_NEKONK_SLOTS.MO_SHORT_NAME_2
+	AND T_SLOTS.SP_OID_0 = T_NEKONK_SLOTS.SP_OID_2
+	AND T_SLOTS.SP_NAME_0 = T_NEKONK_SLOTS.SP_NAME_2
+	AND T_SLOTS.MP_DOLGNOST_0 = T_NEKONK_SLOTS.MP_DOLGNOST_2
+ -- Наконец, отбираем уникальных врачей с уникальной ставкой, выводим по ним ставку и считаем ставкодни
+	FULL JOIN (
+		SELECT
+			C_REG AS C_REG_3,
+			MO_OID AS MO_OID_3,
+			MO_SHORT_NAME AS MO_SHORT_NAME_3,
+			SP_OID AS SP_OID_3,
+			SP_NAME AS SP_NAME_3,
+			MP_DOLGNOST AS MP_DOLGNOST_3,
+			SUM(C_STAVKA) AS C_STAVKA_SUM,
+			SUM(C_STAVKA_DAYS) AS C_STAVKA_DAYS_SUM
+		FROM
+			(
+				SELECT
+					C_REG,
+					MO_OID,
+					MO_SHORT_NAME,
+					SP_OID,
+					SP_NAME,
+					MP_DOLGNOST,
+					MP_FIO,
+					C_STAVKA,
+					C_STAVKA * C_DATE_REP_COUNT AS C_STAVKA_DAYS
+				FROM
+					(
+						SELECT
+							C_REG,
+							MO_OID,
+							MO_SHORT_NAME,
+							SP_OID,
+							SP_NAME,
+							MP_DOLGNOST,
+							MP_FIO,
+							C_STAVKA,
+							COUNT(C_DATE_REP) AS C_DATE_REP_COUNT
+						FROM
+							(
+								SELECT
+									DISTINCT C_REG,
+									MO_OID,
+									MO_SHORT_NAME,
+									SP_OID,
+									SP_NAME,
+									MP_DOLGNOST,
+									MP_FIO,
+									C_DATE_REP,
+									C_STAVKA
+								FROM
+									T_MAIN
+							) AS T_UNIC_1
+						GROUP BY
+							C_REG,
+							MO_OID,
+							MO_SHORT_NAME,
+							SP_OID,
+							SP_NAME,
+							MP_DOLGNOST,
+							MP_FIO,
+							C_STAVKA
+					) AS T_UNIC_2
+			) AS T_UNIC_3
+		GROUP BY
+			C_REG,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_SD
+	ON T_SLOTS.C_REG_0 = T_SD.C_REG_3
+	AND T_SLOTS.MO_OID_0 = T_SD.MO_OID_3
+	AND T_SLOTS.MO_SHORT_NAME_0 = T_SD.MO_SHORT_NAME_3
+	AND T_SLOTS.SP_OID_0 = T_SD.SP_OID_3
+	AND T_SLOTS.SP_NAME_0 = T_SD.SP_NAME_3
+	AND T_SLOTS.MP_DOLGNOST_0 = T_SD.MP_DOLGNOST_3
+ -- А равно и число неявок
+	FULL JOIN (
+		SELECT
+			C_REG AS C_REG_4,
+			MO_OID AS MO_OID_4,
+			MO_SHORT_NAME AS MO_SHORT_NAME_4,
+			SP_OID AS SP_OID_4,
+			SP_NAME AS SP_NAME_4,
+			MP_DOLGNOST AS MP_DOLGNOST_4,
+			SUM(VISITS_ABSENCE) AS ABSENCE_COUNT
+		FROM
+			T_MAIN
+		GROUP BY
+			C_REG,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_ABSENCE_COUNT
+	ON T_SLOTS.C_REG_0 = T_ABSENCE_COUNT.C_REG_4
+	AND T_SLOTS.MO_OID_0 = T_ABSENCE_COUNT.MO_OID_4
+	AND T_SLOTS.MO_SHORT_NAME_0 = T_ABSENCE_COUNT.MO_SHORT_NAME_4
+	AND T_SLOTS.SP_OID_0 = T_ABSENCE_COUNT.SP_OID_4
+	AND T_SLOTS.SP_NAME_0 = T_ABSENCE_COUNT.SP_NAME_4
+	AND T_SLOTS.MP_DOLGNOST_0 = T_ABSENCE_COUNT.MP_DOLGNOST_4
+ -- Также количество слотов с длиной меньше 5 мин
+	FULL JOIN (
+		SELECT
+			C_REG AS C_REG_5,
+			MO_OID AS MO_OID_5,
+			MO_SHORT_NAME AS MO_SHORT_NAME_5,
+			SP_OID AS SP_OID_5,
+			SP_NAME AS SP_NAME_5,
+			MP_DOLGNOST AS MP_DOLGNOST_5,
+			COUNT(SLOT_LENGTH) AS SHORT_SLOTS_COUNT
+		FROM
+			T_MAIN,
+			MIN_SLOT_LENGTH
+		WHERE
+			SLOT_LENGTH < MM
+		GROUP BY
+			C_REG,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST
+	) AS T_SHORT_SLOTS_COUNT
+	ON T_SLOTS.C_REG_0 = T_SHORT_SLOTS_COUNT.C_REG_5
+	AND T_SLOTS.MO_OID_0 = T_SHORT_SLOTS_COUNT.MO_OID_5
+	AND T_SLOTS.MO_SHORT_NAME_0 = T_SHORT_SLOTS_COUNT.MO_SHORT_NAME_5
+	AND T_SLOTS.SP_OID_0 = T_SHORT_SLOTS_COUNT.SP_OID_5
+	AND T_SLOTS.SP_NAME_0 = T_SHORT_SLOTS_COUNT.SP_NAME_5
+	AND T_SLOTS.MP_DOLGNOST_0 = T_SHORT_SLOTS_COUNT.MP_DOLGNOST_5
+ -- для тестирования, потом убрать
+ --where mo_oid_0 = '1.2.643.5.1.13.13.12.2.28.2675'
+ --and sp_oid_0 = '1.2.643.5.1.13.13.12.2.28.2675.0.237138'
+ --and mp_dolgnost_0 = 'врач-терапевт участковый';
+ -- убрать до этого места;
+ -- ОСНОВНАЯ ТАБЛИЦА
+	WITH SELECT_FLAG(FLAG_) AS (VALUES(0)), -- выбор расчётной даты для каждого региона: 0 - последняя дата, 1 - предпоследняя дата
+	BORDER_DAYS(I,
+	DAYS) AS (VALUES (0,
+	7),
+	(1,
+	4),
+	(2,
+	10)), -- "отступы": max дней от даты дайджеста до даты последнего отчёта (7), границы интервала для даты предпоследнего отчёта (от 4 до 10)
+	MIN_SLOT_LENGTH(MM) AS (VALUES(5)), -- продолжительность "короткого" слота, мин
+	T_MAIN AS
+ -- Отбор данных за 14 дней
+	(
+		SELECT
+			C_ID,
+			C_REG,
+			C_DATE,
+			MO_OID,
+			MO_SHORT_NAME,
+			SP_OID,
+			SP_NAME,
+			MP_DOLGNOST,
+			MP_FIO,
+			C_DATE_REP,
+			SLOTS_TYPE,
+			C_SLOTS_C,
+			C_SLOTS_B,
+			C_STAVKA,
+			SLOT_LENGTH,
+			VISITS_ABSENCE
+		FROM
+ -- Отбор из основной таблицы
+			(
+				SELECT
+					C_ID,
+					C_REG,
+					C_DATE,
+					MO_OID,
+					MO_SHORT_NAME,
+					SP_OID,
+					SP_NAME,
+					MP_DOLGNOST,
+					MP_FIO,
+					SLOTS_TYPE,
+					CAST(SLOTS_CREATED AS DECIMAL(10,
+					0)) AS C_SLOTS_C,
+					CAST(SLOTS_BOOKED AS DECIMAL(10,
+					0)) AS C_SLOTS_B,
+					CASE
+						WHEN LEFT(DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' THEN
+							TO_DATE(DATE_REPORT, 'dd.mm.yyyy')
+						WHEN LEFT(DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' THEN
+							TO_DATE(DATE_REPORT, 'yyyy-mm-dd')
+						ELSE
+							TO_DATE('1900-01-01', 'yyyy-mm-dd')
+					END AS C_DATE_REP,
+					CASE
+						WHEN REPLACE(MP_STAVKA, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN
+							CAST(REPLACE(MP_STAVKA, ',', '.') AS DECIMAL(10, 3))
+						ELSE
+							0
+					END AS C_STAVKA,
+					CASE
+						WHEN REPORT_ROWS.SLOT_LENGTH ~ '^[0-9]+.[0-9]+$' THEN
+							CAST(REPORT_ROWS.SLOT_LENGTH AS DECIMAL(10, 0))
+						ELSE
+							0
+					END AS SLOT_LENGTH, -- поля, которых у Морева нет
+					CASE
+						WHEN REPORT_ROWS.VISITS_ABSENCE ~ '^[0-9]+$' THEN
+							CAST(REPORT_ROWS.VISITS_ABSENCE AS INT)
+						ELSE
+							0
+					END AS VISITS_ABSENCE
+				FROM
+					FLK.REPORT_ROWS
+					RIGHT JOIN -- фильтрует основную таблицу по отобранным ниже ID
+					(
+						SELECT
+							CASE
+								WHEN FLAG_ = 0 THEN
+									V1
+								ELSE
+									V2
+							END AS C_ID,
+							CASE
+								WHEN FLAG_ = 0 THEN
+									DATE_1
+								ELSE
+									DATE_2
+							END AS C_DATE,
+							REPORT_REGION_NAME AS C_REG
+						FROM
+							(
+								SELECT
+									MAX(VALIDATION_ID) AS V2,
+									MAX (Q2.REPORT_DATE) AS DATE_2,
+									V1,
+									DATE_1,
+									Q2.REPORT_REGION_NAME
+								FROM
+									FLK.VALIDATIONS AS Q2
+									RIGHT JOIN (
+										SELECT
+											MAX(VALIDATION_ID) AS V1,
+											MAX(REPORT_DATE) AS DATE_1,
+											REPORT_REGION_ID
+										FROM
+											FLK.VALIDATIONS,
+											BORDER_DAYS
+										WHERE
+											REPORT_REGION_ID IS NOT NULL
+											AND REPORT_REGION_NAME IS NOT NULL
+											AND REPORT_ERRORS IS NULL
+											AND REPORT_DATE >= CURRENT_DATE - (
+												SELECT
+													DAYS
+												FROM
+													BORDER_DAYS
+												WHERE
+													I = 0
+											)
+										GROUP BY
+											REPORT_REGION_ID
+									) AS Q1
+									ON Q1.REPORT_REGION_ID = Q2.REPORT_REGION_ID
+								WHERE
+									Q2.VALIDATION_ID < V1
+									AND Q2.REPORT_DATE <> DATE_1
+									AND DATE_1 - (
+										SELECT
+											DAYS
+										FROM
+											BORDER_DAYS
+										WHERE
+											I = 1
+									) >= Q2.REPORT_DATE
+									AND Q2.REPORT_DATE>= DATE_1 - (
+										SELECT
+											DAYS
+										FROM
+											BORDER_DAYS
+										WHERE
+											I = 2
+									)
+									AND REPORT_ERRORS IS NULL
+								GROUP BY
+									V1,
+									Q2.REPORT_REGION_NAME,
+									DATE_1
+								ORDER BY
+									REPORT_REGION_NAME
+							)AS ACTUAL_DATA,
+							SELECT_FLAG,
+							BORDER_DAYS
+					) AS T_ID_REG
+					ON T_ID_REG.C_ID = FLK.REPORT_ROWS.VALIDATION_ID
+				WHERE
+					SP_DEPART_TYPE_NAME = 'Амбулаторный'
+					AND MO_DEPT_NAME = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
+					AND (LEFT(DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$'
+					OR LEFT(DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$')
+					AND SLOTS_CREATED ~ '^[0-9]+$'
+					AND SLOTS_BOOKED ~ '^[0-9]+$'
+			) AS T_MAIN_TMP
+		WHERE
+			C_DATE_REP <= C_DATE
+			AND C_DATE_REP > C_DATE-14
+	)
+	SELECT
+		*
+	FROM
+		T_MAIN
+	WHERE
+		C_REG = 'Амурская область';
