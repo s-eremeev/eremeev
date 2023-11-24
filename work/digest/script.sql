@@ -157,8 +157,8 @@ T_MAIN AS
 				AND SLOTS_BOOKED ~ '^[0-9]+$'
 		) AS T_MAIN_TMP
 	WHERE
-		C_DATE_REP <= C_DATE
-		AND C_DATE_REP > C_DATE-14
+		C_DATE_REP < C_DATE
+		AND C_DATE_REP >= C_DATE-14
 )
  -- Собственно формирование выгрузки из ГЛАВНОЙ ТАБЛИЦЫ с приджойниванием столбцов
 SELECT
@@ -575,8 +575,8 @@ FROM
 					AND SLOTS_BOOKED ~ '^[0-9]+$'
 			) AS T_MAIN_TMP
 		WHERE
-			C_DATE_REP <= C_DATE
-			AND C_DATE_REP > C_DATE-14
+			C_DATE_REP < C_DATE
+			AND C_DATE_REP >= C_DATE-14
 	)
 	SELECT
 		*
