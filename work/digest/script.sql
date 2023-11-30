@@ -66,7 +66,7 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 						CAST(REPLACE(MP_STAVKA, ',', '.') AS DECIMAL(10, 3))
 					WHEN REPLACE(MP_STAVKA, ',', '.') ~ '^.[0-9]+$' THEN
 						CAST(REPLACE(CONCAT('0', MP_STAVKA), ',', '.') AS DECIMAL(10, 3))
-					WHEN MP_STAVKA ~ '^[0-9]$' THEN
+					WHEN MP_STAVKA ~ '^[0-9]+$' THEN
 						CAST(MP_STAVKA AS DECIMAL(10, 3))
 					ELSE
 						0
