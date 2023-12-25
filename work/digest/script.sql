@@ -8,10 +8,9 @@ DIGEST_DATE(DATE_DIGEST) AS (VALUES('2023-12-21')),
 BORDER_DAYS(I, DAYS) AS (VALUES (0, 7), (1, 4), (2, 10), (3, 14)),
  -- продолжительность "короткого" слота, мин:
 MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
- -- Отбор данных за 14 дней
 (
 	SELECT
-		DISTINCT C_ID,
+		C_ID,
 		C_REG,
 		C_DATE,
 		MO_OID,
@@ -28,7 +27,6 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 		SLOT_LENGTH,
 		VISITS_ABSENCE
 	FROM
- -- Отбор из основной таблицы
 		(
 			SELECT
 				C_ID,
@@ -96,15 +94,14 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 				CASE
 					WHEN VISITS_ABSENCE ~ '^[0-9]+$' THEN
 						CAST(VISITS_ABSENCE AS DECIMAL(10, 0))
-					WHEN REPLACE(VISITS_ABSENCE, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN
+					WHEN REPLACE(VISITS_ABSENCE, ',', '.') ~ '^[0-9]+.[0]+$' THEN
 						CAST(REPLACE(VISITS_ABSENCE, ',', '.') AS DECIMAL(10, 0))
 					ELSE
 						0
 				END AS VISITS_ABSENCE
 			FROM
 				FLK.REPORT_ROWS
- -- начало таблицы с validation_id
-				RIGHT JOIN -- фильтрует основную таблицу по отобранным ниже ID
+				RIGHT JOIN
 				(
 					SELECT
 						CASE
@@ -137,7 +134,6 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 										REPORT_REGION_ID
 									FROM
 										FLK.VALIDATIONS,
-										BORDER_DAYS,
 										DIGEST_DATE
 									WHERE
 										REPORT_REGION_ID IS NOT NULL
@@ -183,21 +179,13 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 							ORDER BY
 								REPORT_REGION_NAME
 						)AS ACTUAL_DATA,
-						SELECT_FLAG,
-						BORDER_DAYS
+						SELECT_FLAG
 				) AS T_ID_REG
- -- конец таблицы с validation_id
 				ON T_ID_REG.C_ID = FLK.REPORT_ROWS.VALIDATION_ID
 			WHERE
 				SP_DEPART_TYPE_NAME = 'Амбулаторный'
 				AND MO_DEPT_NAME = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
- --and (left(date_report, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' or left(date_report, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$')
- --and slots_created ~ '^[0-9]+$'
- --and slots_booked ~ '^[0-9]+$'
- --and (slot_length ~ '^[0-9]+.[0-9]+$' or slot_length ~ '^[0-9]+,[0-9]+$' or slot_length ~ '^[0-9]+$')
- --and (visits_absence ~ '^[0-9]+$' or visits_absence ~ '^[0-9]+.[0-9]+$')
-		) AS T_MAIN_TMP,
-		BORDER_DAYS
+		) AS T_MAIN_TMP
 	WHERE
 		C_DATE_REP < C_DATE
 		AND C_DATE_REP >= C_DATE - (
@@ -209,7 +197,6 @@ MIN_SLOT_LENGTH(MM) AS (VALUES(5)), T_MAIN AS
 				I = 3
 		)
 )
- -- Собственно формирование выгрузки из ГЛАВНОЙ ТАБЛИЦЫ с приджойниванием столбцов
 SELECT
 	C_ID,
 	C_DATE,
@@ -231,7 +218,6 @@ SELECT
 	0) AS C_NEKONK_SLOTS_ALL,
 	COALESCE (C_NEKONK_SLOTS_BOOKED,
 	0) AS C_NEKONK_SLOTS_BOOKED,
- --COALESCE (c_STAVKA_sum, 0) as c_STAVKA_sum,
 	COALESCE (STF_SUM,
 	0) AS C_STAVKA_SUM,
 	COALESCE (C_STAVKA_DAYS_SUM,
@@ -265,7 +251,6 @@ FROM
 			SP_NAME,
 			MP_DOLGNOST
 	) AS T_SLOTS
- -- Приджойниваем конкурентные слоты всего и занятые
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_1,
@@ -279,7 +264,7 @@ FROM
 		FROM
 			T_MAIN
 		WHERE
-			LEFT(SLOTS_TYPE, 8) = 'Доступен'
+			LOWER(SLOTS_TYPE) LIKE 'доступ%'
 		GROUP BY
 			C_REG,
 			MO_OID,
@@ -294,7 +279,6 @@ FROM
 	AND T_SLOTS.SP_OID_0 = T_KONK_SLOTS.SP_OID_1
 	AND T_SLOTS.SP_NAME_0 = T_KONK_SLOTS.SP_NAME_1
 	AND T_SLOTS.MP_DOLGNOST_0 = T_KONK_SLOTS.MP_DOLGNOST_1
- -- И также неконкурентные
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_2,
@@ -308,8 +292,7 @@ FROM
 		FROM
 			T_MAIN
 		WHERE
-			LEFT(SLOTS_TYPE, 10) = 'Недоступен'
-			OR LEFT(SLOTS_TYPE, 11) = 'Не доступен'
+			LOWER(SLOTS_TYPE) LIKE 'не%доступ%'
 		GROUP BY
 			C_REG,
 			MO_OID,
@@ -324,7 +307,6 @@ FROM
 	AND T_SLOTS.SP_OID_0 = T_NEKONK_SLOTS.SP_OID_2
 	AND T_SLOTS.SP_NAME_0 = T_NEKONK_SLOTS.SP_NAME_2
 	AND T_SLOTS.MP_DOLGNOST_0 = T_NEKONK_SLOTS.MP_DOLGNOST_2
- -- Наконец, отбираем уникальных врачей с уникальной ставкой, выводим по ним ставку и считаем ставкодни
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_3,
@@ -399,7 +381,6 @@ FROM
 	AND T_SLOTS.SP_OID_0 = T_SD.SP_OID_3
 	AND T_SLOTS.SP_NAME_0 = T_SD.SP_NAME_3
 	AND T_SLOTS.MP_DOLGNOST_0 = T_SD.MP_DOLGNOST_3
- -- А равно и число неявок
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_4,
@@ -425,7 +406,6 @@ FROM
 	AND T_SLOTS.SP_OID_0 = T_ABSENCE_COUNT.SP_OID_4
 	AND T_SLOTS.SP_NAME_0 = T_ABSENCE_COUNT.SP_NAME_4
 	AND T_SLOTS.MP_DOLGNOST_0 = T_ABSENCE_COUNT.MP_DOLGNOST_4
- -- Также количество слотов с длиной меньше 5 мин
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_5,
@@ -454,7 +434,6 @@ FROM
 	AND T_SLOTS.SP_OID_0 = T_SHORT_SLOTS_COUNT.SP_OID_5
 	AND T_SLOTS.SP_NAME_0 = T_SHORT_SLOTS_COUNT.SP_NAME_5
 	AND T_SLOTS.MP_DOLGNOST_0 = T_SHORT_SLOTS_COUNT.MP_DOLGNOST_5
- -- сумма ставок для уникальных людей
 	FULL JOIN (
 		SELECT
 			C_REG AS C_REG_6,
