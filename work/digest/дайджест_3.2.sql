@@ -1551,6 +1551,9 @@ T_MAIN AS (
         C_DATE_REP < C_DATE
         AND C_DATE_REP >= C_DATE - DAYS
 )
+
+-- ПОЛНОСТЬЮ
+--или это 1
 SELECT
     DISTINCT TM.C_DATE,
     TM.C_REG,
@@ -1559,3 +1562,270 @@ FROM
     T_MAIN TM
 ORDER BY
     TM.C_REG;
+
+--конец или этого 1
+
+--или это 2
+SELECT
+    DISTINCT TM.C_ID,
+    TM.C_DATE,
+    TM.C_REG,
+    TM.MO_OID,
+    TM.MO_SHORT_NAME,
+    TM.SP_OID,
+    TM.SP_NAME,
+    TM.MP_DOLGNOST,
+    COALESCE (C_SLOTS_ALL,
+    0) AS C_SLOTS_ALL,
+    COALESCE (C_SLOTS_BOOKED,
+    0) AS C_SLOTS_BOOKED,
+    COALESCE (C_KONK_SLOTS_ALL,
+    0) AS C_KONK_SLOTS_ALL,
+    COALESCE (C_KONK_SLOTS_BOOKED,
+    0) AS C_KONK_SLOTS_BOOKED,
+    COALESCE (C_NEKONK_SLOTS_ALL,
+    0) AS C_NEKONK_SLOTS_ALL,
+    COALESCE (C_NEKONK_SLOTS_BOOKED,
+    0) AS C_NEKONK_SLOTS_BOOKED,
+    C_STAVKA_SUM,
+    C_STAVKA_DAYS_SUM,
+    COALESCE (C_ABSENCE_COUNT,
+    0) AS C_ABSENCE_COUNT,
+    COALESCE (C_SHORT_SLOTS_COUNT,
+    0) AS C_SHORT_SLOTS_COUNT
+FROM
+    T_MAIN TM
+    LEFT JOIN (
+        SELECT
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST,
+            SUM(TM.C_SLOTS_C) AS C_SLOTS_ALL,
+            SUM(TM.C_SLOTS_B) AS C_SLOTS_BOOKED
+        FROM
+            T_MAIN TM
+        GROUP BY
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST
+    ) AS TM0
+    ON TM.C_REG = TM0.C_REG
+    AND TM.MO_OID = TM0.MO_OID
+    AND TM.MO_SHORT_NAME = TM0.MO_SHORT_NAME
+    AND TM.SP_OID = TM0.SP_OID
+    AND TM.SP_NAME = TM0.SP_NAME
+    AND TM.MP_DOLGNOST = TM0.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST,
+            SUM(TM.C_SLOTS_C) AS C_KONK_SLOTS_ALL,
+            SUM(TM.C_SLOTS_B) AS C_KONK_SLOTS_BOOKED
+        FROM
+            T_MAIN TM
+        WHERE
+            LOWER(TM.SLOTS_TYPE) LIKE 'доступ%'
+            OR LOWER(TM.SLOTS_TYPE) = 'да'
+        GROUP BY
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST
+    ) AS TM1
+    ON TM.C_REG = TM1.C_REG
+    AND TM.MO_OID = TM1.MO_OID
+    AND TM.MO_SHORT_NAME = TM1.MO_SHORT_NAME
+    AND TM.SP_OID = TM1.SP_OID
+    AND TM.SP_NAME = TM1.SP_NAME
+    AND TM.MP_DOLGNOST = TM1.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST,
+            SUM(TM.C_SLOTS_C) AS C_NEKONK_SLOTS_ALL,
+            SUM(TM.C_SLOTS_B) AS C_NEKONK_SLOTS_BOOKED
+        FROM
+            T_MAIN TM
+        WHERE
+            LOWER(TM.SLOTS_TYPE) LIKE 'не%доступ%'
+            OR LOWER(TM.SLOTS_TYPE) = 'нет'
+        GROUP BY
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST
+    ) AS TM2
+    ON TM.C_REG = TM2.C_REG
+    AND TM.MO_OID = TM2.MO_OID
+    AND TM.MO_SHORT_NAME = TM2.MO_SHORT_NAME
+    AND TM.SP_OID = TM2.SP_OID
+    AND TM.SP_NAME = TM2.SP_NAME
+    AND TM.MP_DOLGNOST = TM2.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TS.C_REG,
+            TS.MO_OID,
+            TS.MO_SHORT_NAME,
+            TS.SP_OID,
+            TS.SP_NAME,
+            TS.MP_DOLGNOST,
+            SUM(TS.C_STAVKA) AS C_STAVKA_DAYS_SUM
+        FROM
+            (
+                SELECT
+                    DISTINCT TM.C_REG,
+                    TM.MO_OID,
+                    TM.MO_SHORT_NAME,
+                    TM.SP_OID,
+                    TM.SP_NAME,
+                    TM.MP_DOLGNOST,
+                    TM.MP_FIO,
+                    TM.C_DATE_REP,
+                    TM.C_STAVKA
+                FROM
+                    T_MAIN TM
+            ) TS
+        GROUP BY
+            TS.C_REG,
+            TS.MO_OID,
+            TS.MO_SHORT_NAME,
+            TS.SP_OID,
+            TS.SP_NAME,
+            TS.MP_DOLGNOST
+    ) AS TM3
+    ON TM.C_REG = TM3.C_REG
+    AND TM.MO_OID = TM3.MO_OID
+    AND TM.MO_SHORT_NAME = TM3.MO_SHORT_NAME
+    AND TM.SP_OID = TM3.SP_OID
+    AND TM.SP_NAME = TM3.SP_NAME
+    AND TM.MP_DOLGNOST = TM3.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TS.C_REG,
+            TS.MO_OID,
+            TS.MO_SHORT_NAME,
+            TS.SP_OID,
+            TS.SP_NAME,
+            TS.MP_DOLGNOST,
+            SUM(TS.C_STAVKA) AS C_STAVKA_SUM
+        FROM
+            (
+                SELECT
+                    DISTINCT TM.C_REG,
+                    TM.MO_OID,
+                    TM.MO_SHORT_NAME,
+                    TM.SP_OID,
+                    TM.SP_NAME,
+                    TM.MP_DOLGNOST,
+                    TM.MP_FIO,
+                    TM.C_STAVKA
+                FROM
+                    T_MAIN TM
+            ) TS
+        GROUP BY
+            TS.C_REG,
+            TS.MO_OID,
+            TS.MO_SHORT_NAME,
+            TS.SP_OID,
+            TS.SP_NAME,
+            TS.MP_DOLGNOST
+    ) AS TM4
+    ON TM.C_REG = TM4.C_REG
+    AND TM.MO_OID = TM4.MO_OID
+    AND TM.MO_SHORT_NAME = TM4.MO_SHORT_NAME
+    AND TM.SP_OID = TM4.SP_OID
+    AND TM.SP_NAME = TM4.SP_NAME
+    AND TM.MP_DOLGNOST = TM4.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST,
+            SUM(TM.VISITS_ABSENCE) AS C_ABSENCE_COUNT
+        FROM
+            T_MAIN TM
+        GROUP BY
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST
+    ) AS TM5
+    ON TM.C_REG = TM5.C_REG
+    AND TM.MO_OID = TM5.MO_OID
+    AND TM.MO_SHORT_NAME = TM5.MO_SHORT_NAME
+    AND TM.SP_OID = TM5.SP_OID
+    AND TM.SP_NAME = TM5.SP_NAME
+    AND TM.MP_DOLGNOST = TM5.MP_DOLGNOST
+    LEFT JOIN (
+        SELECT
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST,
+            SUM(TM.C_SLOTS_C) AS C_SHORT_SLOTS_COUNT
+        FROM
+            T_MAIN TM,
+            MIN_SLOT_LENGTH
+        WHERE
+            SLOT_LENGTH < MM
+        GROUP BY
+            TM.C_ID,
+            TM.C_REG,
+            TM.C_DATE,
+            TM.MO_OID,
+            TM.MO_SHORT_NAME,
+            TM.SP_OID,
+            TM.SP_NAME,
+            TM.MP_DOLGNOST
+    ) AS TM6
+    ON TM.C_REG = TM6.C_REG
+    AND TM.MO_OID = TM6.MO_OID
+    AND TM.MO_SHORT_NAME = TM6.MO_SHORT_NAME
+    AND TM.SP_OID = TM6.SP_OID
+    AND TM.SP_NAME = TM6.SP_NAME
+    AND TM.MP_DOLGNOST = TM6.MP_DOLGNOST;
+
+-- конец или это 2
