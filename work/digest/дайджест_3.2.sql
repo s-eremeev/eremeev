@@ -1834,11 +1834,12 @@ FROM
 
 --------------------------------------------------------------------------
 --ТРЕШ, УГАР И СОДОМИЯ (ОТБОР ТОЛЬКО ТЕХ, У КОГО В "ЗАКРЫТОМ" ПЕРИОДЕ 14 ДНЕЙ)
+-- ПРИ ПОДСЧЁТЕ СТАВОК И СТАВКОДНЕЙ УСИТЫВАЕТСЯ MP_ID
 --КОЛИЧЕСТВО ДНЕЙ В "ЗАКРЫТОМ" ПЕРИОДЕ УКАЗЫВАЕТСЯ ВРУЧНУЮ
 WITH
  -- настройки:
  -- выбор расчётного периода: 0 - последняя дата, 1 - предпоследняя дата:
-SELECT_FLAG(FLAG_) AS (VALUES(0)),
+SELECT_FLAG(FLAG_) AS (VALUES(1)),
  -- выбор границ недель:
 BORDERS(I, D) AS (VALUES (0, '2024-01-22'), (1, '2024-01-28'), (2, '2024-01-29'), (3, '2024-02-04')),
  -- 14 дней, внутри которых должны находиться даты слотов "закрытого" периода
@@ -1856,6 +1857,7 @@ T_MAIN AS (
         SP_OID,
         SP_NAME,
         MP_DOLGNOST,
+        MP_ID,
         MP_FIO,
         C_DATE_REP,
         SLOTS_TYPE,
@@ -1875,6 +1877,7 @@ T_MAIN AS (
                 SP_OID,
                 SP_NAME,
                 MP_DOLGNOST,
+                MP_ID,
                 MP_FIO,
                 C_DATE_REP,
                 SLOTS_TYPE,
@@ -1896,6 +1899,7 @@ T_MAIN AS (
                         SP_OID,
                         SP_NAME,
                         MP_DOLGNOST,
+                        MP_ID,
                         MP_FIO,
                         C_DATE_REP,
                         SLOTS_TYPE,
@@ -1916,6 +1920,7 @@ T_MAIN AS (
                                 SP_OID,
                                 SP_NAME,
                                 MP_DOLGNOST,
+                                MP_ID,
                                 MP_FIO,
                                 SLOTS_TYPE,
                                 CASE
@@ -2005,7 +2010,7 @@ T_MAIN AS (
                                                 V1.DATE_BEFORE
                                             FROM
                                                 FLK.VALIDATIONS V
-                                                RIGHT JOIN (
+                                                INNER JOIN (
                                                     SELECT
                                                         V.REPORT_REGION_NAME,
                                                         MAX(V.VALIDATION_ID) AS ID_BEFORE,
@@ -2067,8 +2072,21 @@ T_MAIN AS (
                 ) AS T_000
         ) AS T_SLOTS_COUNT
     WHERE
-        SLOTS_DAY_COUNT = 14 --ВОТ ОНО, НЕОБХОДИМОЕ КОЛИЧЕСТВО ДНЕЙ В "ЗАКРЫТОМ" ПЕРИОДЕ
+        SLOTS_DAY_COUNT >= 2 --КОЛИЧЕСТВО ДНЕЙ В "ЗАКРЫТОМ" ПЕРИОДЕ
 )
+ --или это 1
+ --SELECT
+ --	*
+ --    DISTINCT TM.C_DATE,
+ --    TM.C_REG,
+ --    TM.SLOTS_TYPE
+ --FROM
+ --    T_MAIN TM
+ --WHERE
+ -- 	C_REG = 'Псковская область'
+ --ORDER BY
+ --    TM.C_REG;
+ --конец или этого 1
 SELECT
     DISTINCT TM.C_ID,
     TM.C_DATE,
@@ -2212,6 +2230,7 @@ FROM
                     TM.SP_OID,
                     TM.SP_NAME,
                     TM.MP_DOLGNOST,
+                    MP_ID, -- COMPLEMENT
                     TM.MP_FIO,
                     TM.C_DATE_REP,
                     TM.C_STAVKA
@@ -2250,6 +2269,7 @@ FROM
                     TM.SP_OID,
                     TM.SP_NAME,
                     TM.MP_DOLGNOST,
+                    MP_ID, -- COMPLEMENT
                     TM.MP_FIO,
                     TM.C_STAVKA
                 FROM
@@ -2332,3 +2352,356 @@ FROM
     AND TM.MP_DOLGNOST = TM6.MP_DOLGNOST;
 
 -- конец или это 2
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------
+--РАЗРАБОТКА НОВАЯ
+SELECT
+    *
+FROM
+    FLK.VALIDATIONS
+WHERE
+    VALIDATION_ID = 11041;
+
+WITH
+	SELECT_FLAG(FLAG_) AS (VALUES(0)),
+	DAYS_COUNT(CNT) AS (VALUES(27)), --МИНИМАЛЬНОЕ 
+	BORDERS(I, D) AS (VALUES (0, '2024-01-22'), (1, '2024-01-28'), (2, '2024-01-29'), (3, '2024-01-24')), -- ATTENTION!
+	T_MAIN AS(
+	SELECT
+	S2.VALIDATION_ID,
+	S2.REPORT_REGION_NAME,
+	S2.REPORT_DATE,
+	S2.MO_OID,
+	S2.MO_SHORT_NAME,
+	S2.SP_OID,
+	S2.SP_NAME,
+	S2.MP_ID,
+	S2.MP_FIO,
+	S2.MP_DOLGNOST,
+	S2.SLOTS_TYPE,
+	S2.C_SLOTS_C,
+	S2.C_SLOTS_B,
+	S2.C_DATE_REP,
+	S2.C_STAVKA,
+	S2.SLOT_LENGTH,
+	S2.VISITS_ABSENCE,
+	SLOTS_DAY_COUNT
+	FROM(
+		SELECT
+		S1.VALIDATION_ID,
+		S1.REPORT_REGION_NAME,
+		S1.REPORT_DATE,
+		S1.MO_OID,
+		S1.MO_SHORT_NAME,
+		S1.SP_OID,
+		S1.SP_NAME,
+		S1.MP_ID,
+		S1.MP_FIO,
+		S1.MP_DOLGNOST,
+		S1.SLOTS_TYPE,
+		S1.C_SLOTS_C,
+		S1.C_SLOTS_B,
+		S1.C_DATE_REP,
+		S1.C_STAVKA,
+		S1.SLOT_LENGTH,
+		S1.VISITS_ABSENCE,
+		MAX(S1.SLOTS_DAYS_RANK) OVER(PARTITION BY S1.VALIDATION_ID) AS SLOTS_DAY_COUNT
+		FROM(
+			SELECT
+			RR.VALIDATION_ID,
+			S0.REPORT_REGION_NAME,
+			S0.REPORT_DATE,
+			RR.MO_OID,
+			RR.MO_SHORT_NAME,
+			RR.SP_OID,
+			RR.SP_NAME,
+			RR.MP_ID,
+			RR.MP_FIO,
+			RR.MP_DOLGNOST,
+			RR.SLOTS_TYPE,
+			CASE
+			WHEN RR.SLOTS_CREATED ~ '[0-9]+$' THEN CAST(RR.SLOTS_CREATED AS DECIMAL(10, 0))
+			WHEN REPLACE(RR.SLOTS_CREATED, ',', '.') ~ '[0-9]+.[0]+$' THEN CAST(REPLACE(RR.SLOTS_CREATED, ',', '.') AS DECIMAL(10, 0))
+			ELSE 0
+			END AS C_SLOTS_C,
+			CASE
+			WHEN RR.SLOTS_BOOKED ~ '^[0-9]+$' THEN CAST(RR.SLOTS_BOOKED AS DECIMAL(10, 0))
+			WHEN REPLACE(RR.SLOTS_BOOKED, ',', '.') ~ '[0-9]+.[0]+$' THEN CAST(REPLACE(RR.SLOTS_BOOKED, ',', '.') AS DECIMAL(10, 0))
+			ELSE 0
+			END AS C_SLOTS_B,
+			CASE
+			WHEN LEFT(RR.DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' THEN TO_DATE(RR.DATE_REPORT, 'dd.mm.yyyy')
+			WHEN LEFT(RR.DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' THEN TO_DATE(RR.DATE_REPORT, 'yyyy-mm-dd')
+			ELSE TO_DATE('1900-01-01', 'yyyy-mm-dd')
+			END AS C_DATE_REP,
+			CASE
+			WHEN REPLACE(RR.MP_STAVKA, ',', '') ~ '^[0]+$' THEN 1.000
+			WHEN REPLACE(RR.MP_STAVKA, '.', '') ~ '^[0]+$' THEN 1.000
+			WHEN REPLACE(RR.MP_STAVKA, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN CAST(REPLACE(RR.MP_STAVKA, ',', '.') AS DECIMAL(10, 3))
+			WHEN REPLACE(RR.MP_STAVKA, ',', '.') ~ '^.[0-9]+$' THEN CAST(REPLACE(CONCAT('0', RR.MP_STAVKA), ',', '.') AS DECIMAL(10, 3))
+			WHEN RR.MP_STAVKA ~ '^[1-9][0-9]+$' THEN CAST(RR.MP_STAVKA AS DECIMAL(10, 3))
+			WHEN RR.MP_STAVKA ~ '^[0]+$' THEN 1.000
+			WHEN RR.MP_STAVKA IS NULL THEN 1.000
+			WHEN RR.MP_STAVKA = '' THEN 1.000
+			ELSE 1.000
+			END AS C_STAVKA,
+			CASE
+			WHEN REPLACE (RR.SLOT_LENGTH, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN CAST (REPLACE (RR.SLOT_LENGTH, ',', '.') AS DECIMAL(10, 0))
+			WHEN RR.SLOT_LENGTH ~ '^[0-9]+$' THEN CAST(RR.SLOT_LENGTH AS DECIMAL(10, 0))
+			ELSE 0
+			END AS SLOT_LENGTH,
+			CASE
+			WHEN RR.VISITS_ABSENCE ~ '^[0-9]+$' THEN CAST(RR.VISITS_ABSENCE AS DECIMAL(10, 0))
+			WHEN REPLACE(RR.VISITS_ABSENCE, ',', '.') ~ '^[0-9]+.[0]+$' THEN CAST(REPLACE(RR.VISITS_ABSENCE, ',', '.') AS DECIMAL(10, 0))
+			ELSE 0
+			END AS VISITS_ABSENCE,
+			DENSE_RANK() OVER(PARTITION BY RR.VALIDATION_ID ORDER BY RR.DATE_REPORT) AS SLOTS_DAYS_RANK
+			FROM FLK.REPORT_ROWS RR
+			RIGHT JOIN
+			(SELECT
+			 V.VALIDATION_ID,
+			 V.REPORT_REGION_NAME,
+			 V.REPORT_DATE
+			 FROM
+			 FLK.VALIDATIONS V
+			 WHERE
+			 V.REPORT_DATE BETWEEN CAST((SELECT D FROM BORDERS WHERE I=0) AS DATE) AND CAST((SELECT D FROM BORDERS WHERE I=3) AS DATE)
+			) AS S0
+			ON RR.VALIDATION_ID = S0.VALIDATION_ID
+			LEFT JOIN
+			(SELECT RR2.VALIDATION_ID,
+			 CASE
+				WHEN LEFT(RR2.DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' THEN TO_DATE(RR2.DATE_REPORT, 'dd.mm.yyyy')
+				WHEN LEFT(RR2.DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' THEN TO_DATE(RR2.DATE_REPORT, 'yyyy-mm-dd')
+				ELSE TO_DATE('1900-01-01', 'yyyy-mm-dd')
+			 END AS C_DATE_REP
+			 FROM FLK.REPORT_ROWS RR2) AS RR2
+			ON RR2.VALIDATION_ID = S0.VALIDATION_ID
+			WHERE RR.SP_DEPART_TYPE_NAME = 'Амбулаторный'
+			AND RR.MO_DEPT_NAME = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
+			AND RR2.C_DATE_REP > S0.REPORT_DATE) AS S1) AS S2, DAYS_COUNT
+	WHERE S2.SLOTS_DAY_COUNT > CNT) -- ОГРАНИЧЕНИЕ КОЛИЧЕСТВА ДНЕЙ В ЗАКРЫТОМ ПЕРИОДЕ
+	--RIGHT JOIN
+	
+
+SELECT
+*
+--VALIDATION_ID, MAX(C_DATE_REP), MIN(C_DATE_REP)
+FROM T_MAIN
+--GROUP BY VALIDATION_ID;
+
+
+
+------------------------------------------------------------------------------------------------------------------
+--ВОТ ОНО!!!
+WITH SELECT_FLAG(FLAG_) AS (VALUES(0)), DAYS_COUNT(CNT) AS (VALUES(14)), --МИНИМАЛЬНОЕ
+BORDERS(I, D) AS (VALUES (0, '2024-01-22'), (1, '2024-01-28'), (2, '2024-01-29'), (3, '2024-01-24')), -- ATTENTION!
+T_MAIN AS(
+    SELECT
+        S3.VALIDATION_ID,
+        S3.REPORT_REGION_NAME,
+        S3.REPORT_DATE,
+        S3.MO_OID,
+        S3.MO_SHORT_NAME,
+        S3.SP_OID,
+        S3.SP_NAME,
+        S3.MP_ID,
+        S3.MP_FIO,
+        S3.MP_DOLGNOST,
+        S3.SLOTS_TYPE,
+        S3.C_SLOTS_C,
+        S3.C_SLOTS_B,
+        S3.C_DATE_REP,
+        S3.C_STAVKA,
+        S3.SLOT_LENGTH,
+        S3.VISITS_ABSENCE,
+        S3.SLOTS_DAY_COUNT
+    FROM
+        (
+            SELECT
+                S2.VALIDATION_ID,
+                S2.REPORT_REGION_NAME,
+                S2.REPORT_DATE,
+                S2.MO_OID,
+                S2.MO_SHORT_NAME,
+                S2.SP_OID,
+                S2.SP_NAME,
+                S2.MP_ID,
+                S2.MP_FIO,
+                S2.MP_DOLGNOST,
+                S2.SLOTS_TYPE,
+                S2.C_SLOTS_C,
+                S2.C_SLOTS_B,
+                S2.C_DATE_REP,
+                S2.C_STAVKA,
+                S2.SLOT_LENGTH,
+                S2.VISITS_ABSENCE,
+                MAX(S2.SLOTS_DAYS_RANK) OVER(PARTITION BY S2.VALIDATION_ID) AS SLOTS_DAY_COUNT
+            FROM
+                (
+                    SELECT
+                        S1.VALIDATION_ID,
+                        S1.REPORT_REGION_NAME,
+                        S1.REPORT_DATE,
+                        S1.MO_OID,
+                        S1.MO_SHORT_NAME,
+                        S1.SP_OID,
+                        S1.SP_NAME,
+                        S1.MP_ID,
+                        S1.MP_FIO,
+                        S1.MP_DOLGNOST,
+                        S1.SLOTS_TYPE,
+                        S1.C_SLOTS_C,
+                        S1.C_SLOTS_B,
+                        S1.C_DATE_REP,
+                        S1.C_STAVKA,
+                        S1.SLOT_LENGTH,
+                        S1.VISITS_ABSENCE,
+                        DENSE_RANK() OVER(PARTITION BY S1.VALIDATION_ID ORDER BY S1.C_DATE_REP) AS SLOTS_DAYS_RANK
+                    FROM
+                        (
+                            SELECT
+                                T0.VALIDATION_ID,
+                                T0.REPORT_REGION_NAME,
+                                T0.REPORT_DATE,
+                                T0.MO_OID,
+                                T0.MO_SHORT_NAME,
+                                T0.SP_OID,
+                                T0.SP_NAME,
+                                T0.MP_ID,
+                                T0.MP_FIO,
+                                T0.MP_DOLGNOST,
+                                T0.SLOTS_TYPE,
+                                T0.C_SLOTS_C,
+                                T0.C_SLOTS_B,
+                                T0.C_DATE_REP,
+                                T0.C_STAVKA,
+                                T0.SLOT_LENGTH,
+                                T0.VISITS_ABSENCE
+                            FROM
+                                (
+                                    SELECT
+                                        RR.VALIDATION_ID,
+                                        S0.REPORT_REGION_NAME,
+                                        S0.REPORT_DATE,
+                                        RR.MO_OID,
+                                        RR.MO_SHORT_NAME,
+                                        RR.SP_OID,
+                                        RR.SP_NAME,
+                                        RR.MP_ID,
+                                        RR.MP_FIO,
+                                        RR.MP_DOLGNOST,
+                                        RR.SLOTS_TYPE,
+                                        CASE
+                                            WHEN RR.SLOTS_CREATED ~ '[0-9]+$' THEN
+                                                CAST(RR.SLOTS_CREATED AS DECIMAL(10, 0))
+                                            WHEN REPLACE(RR.SLOTS_CREATED, ',', '.') ~ '[0-9]+.[0]+$' THEN
+                                                CAST(REPLACE(RR.SLOTS_CREATED, ',', '.') AS DECIMAL(10, 0))
+                                            ELSE
+                                                0
+                                        END AS C_SLOTS_C,
+                                        CASE
+                                            WHEN RR.SLOTS_BOOKED ~ '^[0-9]+$' THEN
+                                                CAST(RR.SLOTS_BOOKED AS DECIMAL(10, 0))
+                                            WHEN REPLACE(RR.SLOTS_BOOKED, ',', '.') ~ '[0-9]+.[0]+$' THEN
+                                                CAST(REPLACE(RR.SLOTS_BOOKED, ',', '.') AS DECIMAL(10, 0))
+                                            ELSE
+                                                0
+                                        END AS C_SLOTS_B,
+                                        CASE
+                                            WHEN LEFT(RR.DATE_REPORT, 10) ~ '^[0-3][0-9].[0-1][0-9].[2][0][2][3-9]$' THEN
+                                                TO_DATE(RR.DATE_REPORT, 'dd.mm.yyyy')
+                                            WHEN LEFT(RR.DATE_REPORT, 10) ~ '^[2][0][2][3-9]-[0-1][0-9]-[0-3][0-9]$' THEN
+                                                TO_DATE(RR.DATE_REPORT, 'yyyy-mm-dd')
+                                            ELSE
+                                                TO_DATE('1900-01-01', 'yyyy-mm-dd')
+                                        END AS C_DATE_REP,
+                                        CASE
+                                            WHEN REPLACE(RR.MP_STAVKA, ',', '') ~ '^[0]+$' THEN
+                                                1.000
+                                            WHEN REPLACE(RR.MP_STAVKA, '.', '') ~ '^[0]+$' THEN
+                                                1.000
+                                            WHEN REPLACE(RR.MP_STAVKA, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN
+                                                CAST(REPLACE(RR.MP_STAVKA, ',', '.') AS DECIMAL(10, 3))
+                                            WHEN REPLACE(RR.MP_STAVKA, ',', '.') ~ '^.[0-9]+$' THEN
+                                                CAST(REPLACE(CONCAT('0', RR.MP_STAVKA), ',', '.') AS DECIMAL(10, 3))
+                                            WHEN RR.MP_STAVKA ~ '^[1-9][0-9]+$' THEN
+                                                CAST(RR.MP_STAVKA AS DECIMAL(10, 3))
+                                            WHEN RR.MP_STAVKA ~ '^[0]+$' THEN
+                                                1.000
+                                            WHEN RR.MP_STAVKA IS NULL THEN
+                                                1.000
+                                            WHEN RR.MP_STAVKA = '' THEN
+                                                1.000
+                                            ELSE
+                                                1.000
+                                        END AS C_STAVKA,
+                                        CASE
+                                            WHEN REPLACE (RR.SLOT_LENGTH, ',', '.') ~ '^[0-9]+.[0-9]+$' THEN
+                                                CAST (REPLACE (RR.SLOT_LENGTH, ',', '.') AS DECIMAL(10, 0))
+                                            WHEN RR.SLOT_LENGTH ~ '^[0-9]+$' THEN
+                                                CAST(RR.SLOT_LENGTH AS DECIMAL(10, 0))
+                                            ELSE
+                                                0
+                                        END AS SLOT_LENGTH,
+                                        CASE
+                                            WHEN RR.VISITS_ABSENCE ~ '^[0-9]+$' THEN
+                                                CAST(RR.VISITS_ABSENCE AS DECIMAL(10, 0))
+                                            WHEN REPLACE(RR.VISITS_ABSENCE, ',', '.') ~ '^[0-9]+.[0]+$' THEN
+                                                CAST(REPLACE(RR.VISITS_ABSENCE, ',', '.') AS DECIMAL(10, 0))
+                                            ELSE
+                                                0
+                                        END AS VISITS_ABSENCE,
+                                        DENSE_RANK() OVER(PARTITION BY RR.VALIDATION_ID ORDER BY RR.DATE_REPORT) AS SLOTS_DAYS_RANK
+                                    FROM
+                                        FLK.REPORT_ROWS RR
+                                        RIGHT JOIN (
+                                            SELECT
+                                                V.VALIDATION_ID,
+                                                V.REPORT_REGION_NAME,
+                                                V.REPORT_DATE
+                                            FROM
+                                                FLK.VALIDATIONS V
+                                            WHERE
+                                                V.REPORT_DATE BETWEEN CAST((
+                                                    SELECT
+                                                        D
+                                                    FROM
+                                                        BORDERS
+                                                    WHERE
+                                                        I=0
+                                                ) AS DATE) AND CAST((
+                                                    SELECT
+                                                        D
+                                                    FROM
+                                                        BORDERS
+                                                    WHERE
+                                                        I=3
+                                                ) AS DATE)
+                                        ) AS S0
+                                        ON RR.VALIDATION_ID = S0.VALIDATION_ID
+                                    WHERE
+                                        RR.SP_DEPART_TYPE_NAME = 'Амбулаторный'
+                                        AND RR.MO_DEPT_NAME = 'Органы исполнительной власти субъектов Российской Федерации, осуществляющие функции в области здравоохранения'
+                                ) AS T0
+                            WHERE
+                                T0.C_DATE_REP < T0.REPORT_DATE
+                        ) AS S1
+                ) AS S2
+        ) AS S3,
+        DAYS_COUNT
+    WHERE
+        S3.SLOTS_DAY_COUNT = CNT
+)
+SELECT
+    *
+FROM
+    T_MAIN
